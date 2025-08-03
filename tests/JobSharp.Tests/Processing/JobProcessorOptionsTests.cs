@@ -13,7 +13,7 @@ public class JobProcessorOptionsTests
         var options = new JobProcessorOptions();
 
         // Assert
-        options.MaxConcurrentJobs.ShouldBe(Environment.ProcessorCount);
+        options.MaxConcurrentJobs.ShouldBe(10);
         options.PollingInterval.ShouldBe(TimeSpan.FromSeconds(5));
         options.BatchSize.ShouldBe(100);
     }

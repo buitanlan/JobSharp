@@ -28,8 +28,12 @@ public class EntityFrameworkJobStorageTests : IDisposable
         _context = new JobSharpDbContext(options);
         _logger = Substitute.For<ILogger<EntityFrameworkJobStorage>>();
 
+        var services = new ServiceCollection();
+        services.AddSingleton<JobSharpDbContext>(_context);
+        var serviceProvider = services.BuildServiceProvider();
+
         var serviceScope = Substitute.For<IServiceScope>();
-        serviceScope.ServiceProvider.GetRequiredService<JobSharpDbContext>().Returns(_context);
+        serviceScope.ServiceProvider.Returns(serviceProvider);
 
         _serviceScopeFactory = Substitute.For<IServiceScopeFactory>();
         _serviceScopeFactory.CreateScope().Returns(serviceScope);

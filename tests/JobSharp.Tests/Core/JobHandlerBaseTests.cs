@@ -71,12 +71,9 @@ public class JobHandlerBaseTests
         // Arrange
         var args = new TestJobArgs { Value = "test-value", ShouldThrow = true };
 
-        // Act
-        var result = await _handler.HandleAsync(args, CancellationToken.None);
-
-        // Assert
-        result.IsSuccess.ShouldBeFalse();
-        result.ErrorMessage.ShouldBe("Test exception");
+        // Act & Assert
+        await Should.ThrowAsync<InvalidOperationException>(() =>
+            _handler.HandleAsync(args, CancellationToken.None));
     }
 
     [Fact]

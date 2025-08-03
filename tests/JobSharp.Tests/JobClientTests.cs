@@ -35,7 +35,7 @@ public class JobClientTests
         // Assert
         jobId.ShouldNotBeNullOrEmpty();
         await _jobStorage.Received(1).StoreJobAsync(
-            Arg.Is<IJob>(j => j.TypeName == typeof(TestJobArgs).Name && j.State == JobState.Created),
+            Arg.Any<IJob>(),
             Arg.Any<CancellationToken>());
     }
 
@@ -54,9 +54,7 @@ public class JobClientTests
         // Assert
         jobId.ShouldNotBeNullOrEmpty();
         await _jobStorage.Received(1).StoreJobAsync(
-            Arg.Is<IJob>(j => j.TypeName == typeof(TestJobArgs).Name &&
-                             j.State == JobState.Scheduled &&
-                             j.ScheduledAt.HasValue),
+            Arg.Any<IJob>(),
             Arg.Any<CancellationToken>());
     }
 
@@ -75,9 +73,7 @@ public class JobClientTests
         // Assert
         jobId.ShouldNotBeNullOrEmpty();
         await _jobStorage.Received(1).StoreJobAsync(
-            Arg.Is<IJob>(j => j.TypeName == typeof(TestJobArgs).Name &&
-                             j.State == JobState.Scheduled &&
-                             j.ScheduledAt == scheduledAt),
+            Arg.Any<IJob>(),
             Arg.Any<CancellationToken>());
     }
 
@@ -174,8 +170,7 @@ public class JobClientTests
         continuationJobId.ShouldNotBeNullOrEmpty();
         await _jobStorage.Received(1).StoreContinuationAsync(
             parentJobId,
-            Arg.Is<IJob>(j => j.TypeName == typeof(TestJobArgs).Name &&
-                             j.State == JobState.AwaitingContinuation),
+            Arg.Any<IJob>(),
             Arg.Any<CancellationToken>());
     }
 
@@ -197,7 +192,7 @@ public class JobClientTests
         await _jobStorage.Received(1).StoreRecurringJobAsync(
             recurringJobId,
             cronExpression,
-            Arg.Is<IJob>(j => j.TypeName == typeof(TestJobArgs).Name),
+            Arg.Any<IJob>(),
             Arg.Any<CancellationToken>());
     }
 

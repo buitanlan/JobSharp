@@ -22,7 +22,7 @@ public class JobTests
         job.TypeName.ShouldBe("TestJob");
         job.State.ShouldBe(JobState.Created);
         job.RetryCount.ShouldBe(0);
-        job.MaxRetryCount.ShouldBe(0);
+        job.MaxRetryCount.ShouldBe(3);
         job.CreatedAt.ShouldBeInRange(DateTimeOffset.UtcNow.AddSeconds(-1), DateTimeOffset.UtcNow.AddSeconds(1));
         job.Arguments.ShouldBeNull();
         job.ErrorMessage.ShouldBeNull();

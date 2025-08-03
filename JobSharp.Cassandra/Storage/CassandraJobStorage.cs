@@ -18,11 +18,11 @@ public class CassandraJobStorage : IJobStorage
     private readonly ILogger<CassandraJobStorage> _logger;
     private const int ScheduledJobsBuckets = 10; // Number of buckets for scheduled jobs partitioning
 
-    public CassandraJobStorage(ISession session, ILogger<CassandraJobStorage> logger)
+    public CassandraJobStorage(ISession session, IMapper mapper, ILogger<CassandraJobStorage> logger)
     {
         _session = session ?? throw new ArgumentNullException(nameof(session));
+        _mapper = mapper ?? throw new ArgumentNullException(nameof(mapper));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-        _mapper = new Mapper(session);
     }
 
     public async Task<string> StoreJobAsync(IJob job, CancellationToken cancellationToken = default)

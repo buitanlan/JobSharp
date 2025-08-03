@@ -451,7 +451,7 @@ public class DapperJobStorageTests : IDisposable
             "SELECT * FROM RecurringJobs WHERE Id = @Id",
             new { Id = recurringJobId });
 
-        removedJob.ShouldBeNull();
+        Assert.Null(removedJob);
     }
 
     public void Dispose()

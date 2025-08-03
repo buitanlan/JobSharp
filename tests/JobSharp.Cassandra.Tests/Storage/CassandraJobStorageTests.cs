@@ -14,22 +14,21 @@ namespace JobSharp.Cassandra.Tests.Storage;
 public class CassandraJobStorageTests : IDisposable
 {
     private readonly ISession _session;
+    private readonly IMapper _mapper;
     private readonly ILogger<CassandraJobStorage> _logger;
     private readonly CassandraJobStorage _storage;
 
     public CassandraJobStorageTests()
     {
         _session = Substitute.For<ISession>();
+        _mapper = Substitute.For<IMapper>();
         _logger = Substitute.For<ILogger<CassandraJobStorage>>();
-        _storage = new CassandraJobStorage(_session, _logger);
+        _storage = new CassandraJobStorage(_session, _mapper, _logger);
     }
 
     [Fact]
     public async Task StoreJobAsync_ShouldStoreJobInCassandra()
     {
-        // This test verifies the storage behavior conceptually
-        // In a real scenario, this would use an actual Cassandra test cluster
-
         // Arrange
         var job = new Job
         {
@@ -41,22 +40,18 @@ public class CassandraJobStorageTests : IDisposable
             CreatedAt = DateTimeOffset.UtcNow
         };
 
-        // Act & Assert
-        // Since we're using mocks, we verify the structure is correct
-        job.Id.ShouldBe("test-job-1");
-        job.State.ShouldBe(JobState.Created);
-        ((int)job.State).ShouldBe(0); // JobState.Created = 0
+        // Act
+        var result = await _storage.StoreJobAsync(job);
 
-        // The actual storage call would require a real Cassandra instance
-        // For unit tests, we focus on data mapping logic
-        var result = job.Id; // Simulating storage return
+        // Assert
         result.ShouldBe(job.Id);
+        await _mapper.Received(1).InsertAsync(Arg.Is<JobRow>(j => j.Id == job.Id));
+        await _mapper.Received(1).InsertAsync(Arg.Is<JobsByStateRow>(j => j.JobId == job.Id && j.State == (int)job.State));
     }
 
     [Fact]
     public async Task UpdateJobAsync_ShouldUpdateExistingJob()
     {
-        // Arrange
         var job = new Job
         {
             Id = "test-job-2",
@@ -65,15 +60,18 @@ public class CassandraJobStorageTests : IDisposable
             CreatedAt = DateTimeOffset.UtcNow
         };
 
-        // Modify job
+        var existingJobRow = new JobRow { Id = job.Id, State = (int)JobState.Created, CreatedAt = job.CreatedAt };
+        _mapper.FirstOrDefaultAsync<JobRow>("WHERE id = ?", job.Id).Returns(Task.FromResult(existingJobRow));
+
         job.State = JobState.Succeeded;
         job.Result = "Job completed successfully";
         job.ExecutedAt = DateTimeOffset.UtcNow;
 
-        // Act & Assert
-        job.State.ShouldBe(JobState.Succeeded);
-        ((int)job.State).ShouldBe(3); // JobState.Succeeded = 3
-        job.Result.ShouldBe("Job completed successfully");
+        // Act
+        await _storage.UpdateJobAsync(job);
+
+        // Assert
+        await _mapper.Received(1).UpdateAsync(Arg.Is<JobRow>(j => j.Id == job.Id && j.State == (int)job.State));
     }
 
     [Fact]
@@ -86,19 +84,25 @@ public class CassandraJobStorageTests : IDisposable
             Id = jobId,
             TypeName = "TestJob",
             Arguments = "{\"test\": \"value\"}",
-            State = (int)JobState.Scheduled, // Cast enum to int for Cassandra model
+            State = (int)JobState.Scheduled,
             ScheduledAt = DateTimeOffset.UtcNow.AddHours(1),
             CreatedAt = DateTimeOffset.UtcNow
         };
 
-        // Act & Assert
-        jobRow.Id.ShouldBe(jobId);
-        jobRow.TypeName.ShouldBe("TestJob");
-        jobRow.State.ShouldBe((int)JobState.Scheduled); // Compare int with cast enum
+        _mapper.FirstOrDefaultAsync<JobRow>("WHERE id = ?", jobId).Returns(Task.FromResult(jobRow));
+
+        // Act
+        var result = await _storage.GetJobAsync(jobId);
+
+        // Assert
+        result.ShouldNotBeNull();
+        result.Id.ShouldBe(jobId);
+        result.TypeName.ShouldBe("TestJob");
+        result.State.ShouldBe(JobState.Scheduled);
     }
 
     [Fact]
-    public async Task GetScheduledJobsAsync_ShouldReturnScheduledJobs()
+    public void GetScheduledJobsAsync_ShouldReturnScheduledJobs()
     {
         // Arrange
         var now = DateTimeOffset.UtcNow;
@@ -125,7 +129,7 @@ public class CassandraJobStorageTests : IDisposable
     }
 
     [Fact]
-    public async Task GetJobsByStateAsync_ShouldReturnJobsWithState()
+    public void GetJobsByStateAsync_ShouldReturnJobsWithState()
     {
         // Arrange
         var jobsByStateRows = new[]
@@ -147,7 +151,7 @@ public class CassandraJobStorageTests : IDisposable
     }
 
     [Fact]
-    public async Task DeleteJobAsync_ShouldRemoveJob()
+    public void DeleteJobAsync_ShouldRemoveJob()
     {
         // Arrange
         var jobId = "job-to-delete";
@@ -165,7 +169,7 @@ public class CassandraJobStorageTests : IDisposable
     }
 
     [Fact]
-    public async Task GetJobCountAsync_ShouldReturnCorrectCount()
+    public void GetJobCountAsync_ShouldReturnCorrectCount()
     {
         // Arrange
         var createdJobs = new[]
@@ -187,7 +191,7 @@ public class CassandraJobStorageTests : IDisposable
     }
 
     [Fact]
-    public async Task StoreBatchAsync_ShouldStoreAllJobs()
+    public void StoreBatchAsync_ShouldStoreAllJobs()
     {
         // Arrange
         var batchId = "test-batch";
@@ -205,7 +209,7 @@ public class CassandraJobStorageTests : IDisposable
     }
 
     [Fact]
-    public async Task GetBatchJobsAsync_ShouldReturnBatchJobs()
+    public void GetBatchJobsAsync_ShouldReturnBatchJobs()
     {
         // Arrange
         var batchId = "test-batch";
@@ -222,7 +226,7 @@ public class CassandraJobStorageTests : IDisposable
     }
 
     [Fact]
-    public async Task StoreContinuationAsync_ShouldStoreContinuationJob()
+    public void StoreContinuationAsync_ShouldStoreContinuationJob()
     {
         // Arrange
         var parentJobId = "parent-job";
@@ -253,7 +257,7 @@ public class CassandraJobStorageTests : IDisposable
     }
 
     [Fact]
-    public async Task GetContinuationsAsync_ShouldReturnContinuationJobs()
+    public void GetContinuationsAsync_ShouldReturnContinuationJobs()
     {
         // Arrange
         var parentJobId = "parent-job";
@@ -277,7 +281,7 @@ public class CassandraJobStorageTests : IDisposable
     }
 
     [Fact]
-    public async Task StoreRecurringJobAsync_ShouldStoreRecurringJob()
+    public void StoreRecurringJobAsync_ShouldStoreRecurringJob()
     {
         // Arrange
         var recurringJobId = "recurring-job";
@@ -308,7 +312,7 @@ public class CassandraJobStorageTests : IDisposable
     }
 
     [Fact]
-    public async Task GetRecurringJobsAsync_ShouldReturnEnabledRecurringJobs()
+    public void GetRecurringJobsAsync_ShouldReturnEnabledRecurringJobs()
     {
         // Arrange
         var recurringJobRows = new[]
@@ -334,7 +338,7 @@ public class CassandraJobStorageTests : IDisposable
     }
 
     [Fact]
-    public async Task RemoveRecurringJobAsync_ShouldRemoveRecurringJob()
+    public void RemoveRecurringJobAsync_ShouldRemoveRecurringJob()
     {
         // Arrange
         var recurringJobId = "recurring-job";
@@ -370,14 +374,21 @@ public class CassandraJobStorageTests : IDisposable
     public void Constructor_WithNullSession_ShouldThrowArgumentNullException()
     {
         // Act & Assert
-        Should.Throw<ArgumentNullException>(() => new CassandraJobStorage(null!, _logger));
+        Should.Throw<ArgumentNullException>(() => new CassandraJobStorage(null!, _mapper, _logger));
     }
 
     [Fact]
     public void Constructor_WithNullLogger_ShouldThrowArgumentNullException()
     {
         // Act & Assert
-        Should.Throw<ArgumentNullException>(() => new CassandraJobStorage(_session, null!));
+        Should.Throw<ArgumentNullException>(() => new CassandraJobStorage(_session, _mapper, null!));
+    }
+
+    [Fact]
+    public void Constructor_WithNullMapper_ShouldThrowArgumentNullException()
+    {
+        // Act & Assert
+        Should.Throw<ArgumentNullException>(() => new CassandraJobStorage(_session, null!, _logger));
     }
 
     public void Dispose()

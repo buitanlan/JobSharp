@@ -26,6 +26,7 @@ public class JobProcessorTests : IDisposable
         _options = Substitute.For<IOptions<JobProcessorOptions>>();
         _options.Value.Returns(new JobProcessorOptions());
 
+        _serviceProvider.GetService(typeof(IEnumerable<IJobHandler>)).Returns(Enumerable.Empty<IJobHandler>());
         _processor = new JobProcessor(_jobStorage, _serviceProvider, _logger, _options);
     }
 

@@ -17,12 +17,12 @@ public class RedisJobStorage : IJobStorage
     private readonly ILogger<RedisJobStorage> _logger;
     private readonly JsonSerializerOptions _jsonOptions;
 
-    private const string JobsKeyPrefix = "jobsharp:jobs:";
-    private const string JobsByStateKeyPrefix = "jobsharp:jobs:state:";
+    private const string JobsKeyPrefix = "jobsharp:job:";
+    private const string JobsByStateKeyPrefix = "jobsharp:job:state:";
     private const string ScheduledJobsKey = "jobsharp:jobs:scheduled";
     private const string BatchJobsKeyPrefix = "jobsharp:jobs:batch:";
     private const string ContinuationJobsKeyPrefix = "jobsharp:jobs:continuation:";
-    private const string RecurringJobsKey = "jobsharp:recurring:";
+    private const string RecurringJobsKey = "jobsharp:recurringjob:";
     private const string RecurringJobsSetKey = "jobsharp:recurring:all";
 
     public RedisJobStorage(IDatabase database, ILogger<RedisJobStorage> logger)
@@ -124,8 +124,10 @@ public class RedisJobStorage : IJobStorage
 
     public async Task<IEnumerable<IJob>> GetScheduledJobsAsync(int batchSize = 100, CancellationToken cancellationToken = default)
     {
+        _logger.LogDebug("Getting scheduled jobs with batch size {BatchSize}", batchSize);
         var now = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
         var jobIds = await _database.SortedSetRangeByScoreAsync(ScheduledJobsKey, 0, now, take: batchSize);
+        _logger.LogDebug("Found {JobIdCount} scheduled job IDs", jobIds.Length);
 
         var jobs = new List<IJob>();
         foreach (var jobId in jobIds)

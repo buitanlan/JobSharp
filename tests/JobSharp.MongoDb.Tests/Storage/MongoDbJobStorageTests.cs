@@ -46,7 +46,7 @@ public class MongoDbJobStorageTests : IDisposable
         // Assert
         result.ShouldBe(job.Id);
 
-        var collection = _database.GetCollection<JobSharp.MongoDb.Models.JobDocument>("jobs");
+        var collection = _database.GetCollection<Models.JobDocument>("jobs");
         var storedJob = await collection.Find(j => j.Id == job.Id).FirstOrDefaultAsync();
 
         storedJob.ShouldNotBeNull();
@@ -361,7 +361,7 @@ public class MongoDbJobStorageTests : IDisposable
         await _storage.StoreRecurringJobAsync(recurringJobId, cronExpression, jobTemplate);
 
         // Assert
-        var collection = _database.GetCollection<JobSharp.MongoDb.Models.RecurringJobDocument>("recurringjobs");
+        var collection = _database.GetCollection<Models.RecurringJobDocument>("recurringJobs");
         var storedJob = await collection.Find(j => j.Id == recurringJobId).FirstOrDefaultAsync();
 
         storedJob.ShouldNotBeNull();
@@ -419,7 +419,7 @@ public class MongoDbJobStorageTests : IDisposable
         await _storage.RemoveRecurringJobAsync(recurringJobId);
 
         // Assert
-        var collection = _database.GetCollection<JobSharp.MongoDb.Models.RecurringJobDocument>("recurringjobs");
+        var collection = _database.GetCollection<Models.RecurringJobDocument>("recurringJobs");
         var removedJob = await collection.Find(j => j.Id == recurringJobId).FirstOrDefaultAsync();
 
         removedJob.ShouldBeNull();

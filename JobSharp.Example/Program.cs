@@ -306,10 +306,10 @@ public class Program
         // Get job counts by state
         await Task.Delay(2000); // Wait for some jobs to be processed
 
-        var scheduledCount = await jobClient.GetJobCountAsync(JobSharp.Core.JobState.Scheduled);
-        var processingCount = await jobClient.GetJobCountAsync(JobSharp.Core.JobState.Processing);
-        var succeededCount = await jobClient.GetJobCountAsync(JobSharp.Core.JobState.Succeeded);
-        var failedCount = await jobClient.GetJobCountAsync(JobSharp.Core.JobState.Failed);
+        var scheduledCount = await jobClient.GetJobCountAsync(Core.JobState.Scheduled);
+        var processingCount = await jobClient.GetJobCountAsync(Core.JobState.Processing);
+        var succeededCount = await jobClient.GetJobCountAsync(Core.JobState.Succeeded);
+        var failedCount = await jobClient.GetJobCountAsync(Core.JobState.Failed);
 
         logger.LogInformation("Job counts - Scheduled: {Scheduled}, Processing: {Processing}, Succeeded: {Succeeded}, Failed: {Failed}",
             scheduledCount, processingCount, succeededCount, failedCount);

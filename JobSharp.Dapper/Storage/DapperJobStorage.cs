@@ -1,4 +1,5 @@
 using System.Data;
+using System.Globalization;
 using JobSharp.Core;
 using JobSharp.Dapper.Models;
 using JobSharp.Jobs;
@@ -9,12 +10,42 @@ using Microsoft.Extensions.Logging;
 namespace JobSharp.Dapper.Storage;
 
 /// <summary>
+/// Custom TypeHandler for DateTimeOffset to handle string conversion in SQLite.
+/// </summary>
+public class DateTimeOffsetTypeHandler : SqlMapper.TypeHandler<DateTimeOffset>
+{
+    public override void SetValue(IDbDataParameter parameter, DateTimeOffset value)
+    {
+        parameter.Value = value.ToString("O"); // Use ISO 8601 format
+    }
+
+    public override DateTimeOffset Parse(object value)
+    {
+        if (value is string stringValue)
+        {
+            if (DateTimeOffset.TryParse(stringValue, out var result))
+                return result;
+        }
+
+        if (value is DateTimeOffset dateTimeOffsetValue)
+            return dateTimeOffsetValue;
+
+        throw new InvalidCastException($"Cannot convert {value?.GetType()?.Name ?? "null"} to DateTimeOffset");
+    }
+}
+
+/// <summary>
 /// Dapper implementation of IJobStorage.
 /// </summary>
 public class DapperJobStorage : IJobStorage
 {
     private readonly IDbConnection _connection;
     private readonly ILogger<DapperJobStorage> _logger;
+
+    static DapperJobStorage()
+    {
+        SqlMapper.AddTypeHandler(new DateTimeOffsetTypeHandler());
+    }
 
     public DapperJobStorage(IDbConnection connection, ILogger<DapperJobStorage> logger)
     {
